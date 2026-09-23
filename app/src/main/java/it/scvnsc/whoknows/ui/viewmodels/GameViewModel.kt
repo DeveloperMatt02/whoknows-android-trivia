@@ -504,6 +504,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // Logica per riprendere il timer
     }
 
+    //Rilascio le risorse audio native quando il ViewModel viene distrutto
+    override fun onCleared() {
+        super.onCleared()
+        soundtrackPlayer.release()
+        soundPool.release()
+    }
+
     fun setupAPI() {
         viewModelScope.launch {
             //provo a fare il setup dell'api all'avvio del programma, se fallisce loggo un errore
