@@ -153,7 +153,7 @@ Details:
 
 `NetworkMonitorService` is a started `Service`:
 - On start, it checks the active network synchronously (`ConnectivityManager.getNetworkCapabilities`) and sets `isOffline`.
-- It registers a `NetworkCallback` for networks with `NET_CAPABILITY_INTERNET`. `onAvailable` and `onLost` post the new value to a companion-object `LiveData<Boolean>`.
+- It registers a **default-network** callback (`registerDefaultNetworkCallback`), so only the network the system is actually using counts. `onAvailable` marks the app online. `onLost` re-checks the active network, because the system may already have switched, for example from Wi-Fi to mobile data. The result is posted to a companion-object `LiveData<Boolean>`.
 - `MainActivity` starts monitoring in `onCreate` and `onResume` and stops it in `onStop` and `onDestroy`, so no callback stays registered while the app is in the background.
 
 Behaviour when the connection drops:

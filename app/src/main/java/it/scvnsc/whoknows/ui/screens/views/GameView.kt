@@ -148,6 +148,7 @@ fun GameView(
 
     val isOffline = NetworkMonitorService.isOffline.observeAsState().value
     val isPlaying = gameViewModel.isPlaying.observeAsState().value
+    val isGameOver = gameViewModel.isGameOver.observeAsState().value
     val isApiSetupComplete = gameViewModel.isApiSetupComplete.observeAsState().value
 
     //per evitare che venga chiamato più volte il setupAPI e per evitare che il timer venga avviato senza motivo
@@ -159,6 +160,12 @@ fun GameView(
         Scaffold(
             content = {
                 when {
+                    // La schermata di fine partita non richiede la rete: la mostro anche se nel frattempo
+                    // la connessione risulta assente, invece di coprirla con l'errore di rete
+                    isPlaying == true && isGameOver == true -> {
+                        GameViewInGame(navController, gameViewModel, settingsViewModel)
+                    }
+
                     // Mostra la schermata di errore di rete
                     isOffline == true -> {
                         NetworkErrorScreen(navController, gameViewModel)

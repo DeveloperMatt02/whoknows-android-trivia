@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -22,34 +21,26 @@ class NetworkMonitorService : Service() {
 
         fun startMonitoring(context: Context) {
             //controllo immediatamente lo stato della connessione all'avvio dell'applicazione
-            Log.d("NetworkMonitorService", "startMonitoring: checking connection...")
-            _isOffline.value = !isNetworkAvailable(context)
+            _isOffline.value = !hasInternetConnection(context)
             Log.d("NetworkMonitorService", "startMonitoring: isOffline: ${_isOffline.value}")
 
-            //Log.d("NetworkMonitorService", "startMonitoring")
             val intent = Intent(context, NetworkMonitorService::class.java)
             context.startService(intent)
         }
 
-        private fun isNetworkAvailable(context: Context): Boolean {
+        //Controlla la rete attiva, cioe' quella che il sistema sta usando in questo momento
+        //(Wi-Fi, dati mobili, Ethernet o VPN), e non una rete qualsiasi tra quelle disponibili
+        private fun hasInternetConnection(context: Context): Boolean {
             val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val network = connectivityManager.activeNetwork ?: return false
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-            val isConnected = activeNetwork.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            _isOffline.value = !isConnected
-
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                else -> false
-            }
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
 
         fun stopMonitoring(context: Context) {
             val intent = Intent(context, NetworkMonitorService::class.java)
             context.stopService(intent)
         }
-
     }
 
     override fun onCreate() {
@@ -61,24 +52,24 @@ class NetworkMonitorService : Service() {
             }
 
             override fun onLost(network: Network) {
-                _isOffline.postValue(true)
+                //La rete di default e' stata persa: ricontrollo, perche' il sistema potrebbe
+                //essere gia' passato a un'altra rete (es. dal Wi-Fi ai dati mobili)
+                _isOffline.postValue(!hasInternetConnection(this@NetworkMonitorService))
             }
-
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val networkRequest = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: IllegalArgumentException) {
             // Il callback non era registrato, possiamo ignorare questa eccezione
         }
 
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+        //Callback sulla sola rete di default: con registerNetworkCallback(request) arrivavano gli eventi
+        //di tutte le reti con accesso a Internet, e la perdita di una rete secondaria (per esempio i dati
+        //mobili spenti in background mentre si e' connessi al Wi-Fi) segnava l'app come offline
+        connectivityManager.registerDefaultNetworkCallback(networkCallback)
 
         return START_STICKY
     }
