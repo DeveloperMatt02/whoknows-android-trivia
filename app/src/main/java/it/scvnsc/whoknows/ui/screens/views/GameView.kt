@@ -82,6 +82,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.widthIn
 import it.scvnsc.whoknows.ui.screens.components.AutoResizeText
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Favorite
@@ -1239,7 +1240,7 @@ fun GameMenuButtons(
     var selectedCategory by rememberSaveable { mutableStateOf("") }
 
     @Composable
-    fun StartGameButton(gameViewModel: GameViewModel) {
+    fun StartGameButton(gameViewModel: GameViewModel, modifier: Modifier) {
         //Start game button
         Button(
             onClick = {
@@ -1247,9 +1248,7 @@ fun GameMenuButtons(
             },
             elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
             shape = RoundedCornerShape(home_buttons_shape),
-            modifier = Modifier
-                .height(height = if (isLandscape) home_buttons_height_landscape else home_buttons_height)
-                .width(width = if (isLandscape) home_buttons_width_landscape else home_buttons_width)
+            modifier = modifier
         ) {
             Row(
                 modifier = Modifier
@@ -1266,7 +1265,7 @@ fun GameMenuButtons(
 
                 Spacer(modifier = Modifier.size(15.dp))
 
-                Text(
+                AutoResizeText(
                     text = "Start Game",
                     style = buttonsTextStyle
                 )
@@ -1276,7 +1275,7 @@ fun GameMenuButtons(
     }
 
     @Composable
-    fun SelectDifficultyButton() {
+    fun SelectDifficultyButton(modifier: Modifier) {
         //Choose difficulty button
         Button(
             onClick = {
@@ -1284,9 +1283,7 @@ fun GameMenuButtons(
             },
             shape = RoundedCornerShape(home_buttons_shape),
             elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
-            modifier = Modifier
-                .height(height = if (isLandscape) home_buttons_height_landscape else home_buttons_height)
-                .width(width = if (isLandscape) home_buttons_width_landscape else home_buttons_width)
+            modifier = modifier
         ) {
             Row(
                 modifier = Modifier
@@ -1303,7 +1300,7 @@ fun GameMenuButtons(
 
                 Spacer(modifier = Modifier.size(15.dp))
 
-                Text(
+                AutoResizeText(
                     text = "Difficulty",
                     style = buttonsTextStyle,
                     fontSize = if (isLandscape) 23.sp else fontSizeMedium,
@@ -1314,7 +1311,7 @@ fun GameMenuButtons(
     }
 
     @Composable
-    fun SelectCategoryButton() {
+    fun SelectCategoryButton(modifier: Modifier) {
         //Choose category button
         Button(
             onClick = {
@@ -1322,9 +1319,7 @@ fun GameMenuButtons(
             },
             shape = RoundedCornerShape(home_buttons_shape),
             elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
-            modifier = Modifier
-                .height(height = if (isLandscape) home_buttons_height_landscape else home_buttons_height)
-                .width(width = if (isLandscape) home_buttons_width_landscape else home_buttons_width)
+            modifier = modifier
         ) {
             Row(
                 modifier = Modifier
@@ -1341,7 +1336,7 @@ fun GameMenuButtons(
 
                 Spacer(modifier = Modifier.size(15.dp))
 
-                Text(
+                AutoResizeText(
                     text = "Category",
                     style = buttonsTextStyle,
                     textAlign = TextAlign.Center,
@@ -1391,18 +1386,23 @@ fun GameMenuButtons(
                 modifier = Modifier
                     .fillMaxSize()
             ) {
-                StartGameButton(gameViewModel)
-                SelectDifficultyButton()
-                SelectCategoryButton()
+                val landscapeButtonModifier = Modifier
+                    .height(home_buttons_height_landscape)
+                    .width(home_buttons_width_landscape)
+                StartGameButton(gameViewModel, landscapeButtonModifier)
+                SelectDifficultyButton(landscapeButtonModifier)
+                SelectCategoryButton(landscapeButtonModifier)
             }
         }
     } else {
+        //Come nella home: i pulsanti si dividono l'altezza disponibile (fino a home_buttons_height)
+        //e la larghezza e' l'80% dello schermo, cosi' la schermata e' fissa e non viene tagliata
         Column(
-            verticalArrangement = Arrangement.spacedBy(40.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 40.dp)
+                .padding(top = 16.dp, bottom = 24.dp)
         ) {
             //Difficulty Selection Dialog
             if (showDifficultySelectionDialog) {
@@ -1437,14 +1437,21 @@ fun GameMenuButtons(
             //App title
             AppTitle(context)
 
+            val portraitButtonModifier = Modifier
+                .weight(1f, fill = false)
+                .heightIn(max = home_buttons_height)
+                .fillMaxHeight()
+                .fillMaxWidth(0.8f)
+                .widthIn(max = home_buttons_width)
+
             //Start game button
-            StartGameButton(gameViewModel)
+            StartGameButton(gameViewModel, portraitButtonModifier)
 
             //Choose difficulty button
-            SelectDifficultyButton()
+            SelectDifficultyButton(portraitButtonModifier)
 
             //Choose category button
-            SelectCategoryButton()
+            SelectCategoryButton(portraitButtonModifier)
 
         }
 
