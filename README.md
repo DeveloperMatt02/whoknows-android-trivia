@@ -185,8 +185,9 @@ The app was built by a team of students between August 2024 and January 2025 as 
 ## 👥 Team
 
 Developed by:
+*   **Nicolas Oberi** ([@snyppololo](https://github.com/snyppololo))
 *   **Matteo Trossi** ([@DeveloperMatt02](https://github.com/DeveloperMatt02))
-<!-- TODO: add the other team members -->
+
 
 ## 🙏 Credits
 
