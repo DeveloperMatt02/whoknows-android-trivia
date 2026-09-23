@@ -20,23 +20,18 @@ import it.scvnsc.whoknows.repository.GameRepository
 import it.scvnsc.whoknows.repository.QuestionRepository
 import it.scvnsc.whoknows.services.NetworkMonitorService
 import it.scvnsc.whoknows.utils.CategoryManager
-import it.scvnsc.whoknows.utils.DifficultyType
+import it.scvnsc.whoknows.utils.GameRules
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val DEFAULT_CATEGORY = "Mixed"
     private val DEFAULT_DIFFICULTY = "Mixed"
-    private val SCORE_EASY_DIFFICULTY = 1
-    private val SCORE_MEDIUM_DIFFICULTY = 2
-    private val SCORE_HARD_DIFFICULTY = 3
     private val WAIT_TIME = 500L
-    private val STARTING_LIVES = 3
     private val RETRY_DELAY = 1000L
 
     fun getCategories(): List<String> {
@@ -298,7 +293,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _score.postValue(0)
 
         //Imposto le vite al valore di partenza
-        _lives.postValue(STARTING_LIVES)
+        _lives.postValue(GameRules.STARTING_LIVES)
 
         //Fetcho la nuova domanda (se la richiesta API fallisce aspetto che torni la connessione e riproviamo)
         _questionForUser.value = nextQuestionWithRetry()
@@ -329,14 +324,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         Log.d("GameViewModel", "Soundtrack stopped")
     }
 
-    //Funzione che converte la stringa "mixed" in "" in modo da far funzionare la richiesta all'API
-    private fun convertMixed(text: String): String {
-        if (text != "Mixed") {
-            return text
-        }
-        return ""
-    }
-
     //Riprova a ottenere una domanda finche' la partita e' in corso.
     //L'attesa usa delay() e quindi sospende la coroutine senza bloccare il main thread
     //(un while(true) attivo sul main thread impedirebbe anche l'aggiornamento di isOffline).
@@ -365,8 +352,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val result = questionRepository.retrieveNewQuestion(
-            convertMixed(_selectedCategory.value.toString()),
-            convertMixed(_selectedDifficulty.value.toString()).lowercase()
+            GameRules.toApiParameter(_selectedCategory.value.toString()),
+            GameRules.toApiParameter(_selectedDifficulty.value.toString()).lowercase()
         )
 
         //avvio il timer per la prossima richiesta API dopo ogni tentativo, anche fallito,
@@ -382,7 +369,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         askedQuestions.add(newQuestion)
-        _shuffledAnswers.value = shuffleAnswers(newQuestion)
+        _shuffledAnswers.value = GameRules.shuffledAnswers(newQuestion.correct_answer, newQuestion.incorrect_answers)
 
         //riavvio il timer di gioco
         resumeTimer()
@@ -398,15 +385,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    //Funzione che mescola le possibili risposte alla domanda (altrimenti la risposta corretta sarebbe sempre la prima)
-    private fun shuffleAnswers(question: Question): MutableList<String> {
-        val corrAnswer = question.correct_answer
-        val incAnswers = question.incorrect_answers.toMutableList()
-        incAnswers.add(corrAnswer)
-        incAnswers.shuffle()
-        return incAnswers
-    }
-
     //Inizializza il timer di gioco
     private fun startTimer() {
 
@@ -418,14 +396,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             gameTimer = 0
             while (_isGameOver.value == false) {
                 if (_isGameTimerInterrupted.value == false) {
-                    val formattedTime =
-                        String.format(
-                            Locale.getDefault(),
-                            "%02d:%02d",
-                            gameTimer / 60,
-                            gameTimer % 60
-                        )
-                    _elapsedTime.postValue(formattedTime)
+                    _elapsedTime.postValue(GameRules.formatElapsedTime(gameTimer))
                     delay(1000L)
                     gameTimer++
                 } else {
@@ -438,12 +409,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     //Aggiorna il punteggio
     private fun updateScore() {
 
-        val increment = when (_questionForUser.value?.difficulty) {
-            DifficultyType.Easy.toString().lowercase() -> SCORE_EASY_DIFFICULTY
-            DifficultyType.Medium.toString().lowercase() -> SCORE_MEDIUM_DIFFICULTY
-            DifficultyType.Hard.toString().lowercase() -> SCORE_HARD_DIFFICULTY
-            else -> 1
-        }
+        val increment = GameRules.pointsFor(_questionForUser.value?.difficulty)
         _score.postValue(_score.value!! + increment)
     }
 
