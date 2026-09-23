@@ -1,0 +1,45 @@
+name: Release APK
+
+# Push a tag like v1.0.0 to build the app and publish it as a GitHub Release:
+#   git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+
+      # Debug-signed build: installable on any device via sideloading,
+      # no release keystore needed in the repository.
+      - name: Build APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk "WhoKnows-${GITHUB_REF_NAME}.apk"
+          gh release create "$GITHUB_REF_NAME" "WhoKnows-${GITHUB_REF_NAME}.apk" \
+            --title "WhoKnows ${GITHUB_REF_NAME}" \
+            --generate-notes
