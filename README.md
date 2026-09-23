@@ -135,7 +135,7 @@ From Android Studio, select a device and press **Run ▶**. From the command lin
 
 ### Running the Tests
 ```bash
-./gradlew testDebugUnitTest     # JVM unit tests (game rules, Room converters, category mapping)
+./gradlew testDebugUnitTest     # JVM unit tests (game rules, Room converters, connectivity tracking, retry logic)
 ```
 
 ## 📂 Project Structure

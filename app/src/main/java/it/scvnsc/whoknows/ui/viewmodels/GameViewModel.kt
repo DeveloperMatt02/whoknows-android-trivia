@@ -21,6 +21,8 @@ import it.scvnsc.whoknows.repository.QuestionRepository
 import it.scvnsc.whoknows.services.NetworkMonitorService
 import it.scvnsc.whoknows.utils.CategoryManager
 import it.scvnsc.whoknows.utils.GameRules
+import it.scvnsc.whoknows.utils.isConnectivityError
+import it.scvnsc.whoknows.utils.retryUntilSuccess
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -108,6 +110,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     //Vite dell'utente
     private val _lives = MutableLiveData<Int>()
     val lives: LiveData<Int> = _lives
+
+    //Vero quando la domanda successiva non arriva per un problema di connessione: la UI mostra
+    //la schermata "No internet connection" anche se il sistema risulta ancora connesso
+    //(es. Wi-Fi senza accesso a Internet)
+    private val _isWaitingForConnection = MutableLiveData(false)
+    val isWaitingForConnection: LiveData<Boolean> get() = _isWaitingForConnection
+
+    //Esito dell'ultima richiesta di una domanda: true se e' fallita per un problema di rete
+    private var lastFetchFailedForConnectivity = false
 
     private val _isApiSetupComplete = MutableLiveData(false)
     val isApiSetupComplete: LiveData<Boolean> get() = _isApiSetupComplete
@@ -327,18 +338,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     //Riprova a ottenere una domanda finche' la partita e' in corso.
     //L'attesa usa delay() e quindi sospende la coroutine senza bloccare il main thread
     //(un while(true) attivo sul main thread impedirebbe anche l'aggiornamento di isOffline).
-    private suspend fun nextQuestionWithRetry(): Question? {
-        var question = nextQuestion()
-        while (question == null && _isGameOver.value != true) {
-            //Se siamo offline aspetto che torni la connessione
-            while (NetworkMonitorService.isOffline.value == true && _isGameOver.value != true) {
-                delay(RETRY_DELAY)
-            }
-            if (_isGameOver.value == true) break
-            question = nextQuestion()
-        }
-        return question
-    }
+    private suspend fun nextQuestionWithRetry(): Question? = retryUntilSuccess(
+        fetch = { nextQuestion() },
+        //la partita e' stata abbandonata (es. "Quit game" dalla schermata di errore di rete)
+        shouldStop = { _isGameOver.value == true },
+        isOffline = { NetworkMonitorService.isOffline.value == true },
+        lastFailureWasConnectivity = { lastFetchFailedForConnectivity },
+        onWaitingForConnection = { _isWaitingForConnection.value = it },
+        pollDelayMillis = RETRY_DELAY
+    )
 
     //Funzione che ottiene la nuova domanda da presentare all'utente (l'API fornisce le domande in ordine casuale)
     private suspend fun nextQuestion(): Question? {
@@ -361,9 +369,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         apiCountdownTimer()
 
         val newQuestion: Question = when (result) {
-            is NetworkResult.Success -> result.data
+            is NetworkResult.Success -> {
+                lastFetchFailedForConnectivity = false
+                result.data
+            }
             is NetworkResult.Error -> {
                 Log.e("GameViewModel", "Error: ${result.exception.message}")
+                lastFetchFailedForConnectivity = result.exception.isConnectivityError()
                 return null
             }
         }

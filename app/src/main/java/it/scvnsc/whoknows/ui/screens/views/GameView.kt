@@ -149,6 +149,7 @@ fun GameView(
     val isOffline = NetworkMonitorService.isOffline.observeAsState().value
     val isPlaying = gameViewModel.isPlaying.observeAsState().value
     val isGameOver = gameViewModel.isGameOver.observeAsState().value
+    val isWaitingForConnection = gameViewModel.isWaitingForConnection.observeAsState().value
     val isApiSetupComplete = gameViewModel.isApiSetupComplete.observeAsState().value
 
     //per evitare che venga chiamato più volte il setupAPI e per evitare che il timer venga avviato senza motivo
@@ -166,8 +167,9 @@ fun GameView(
                         GameViewInGame(navController, gameViewModel, settingsViewModel)
                     }
 
-                    // Mostra la schermata di errore di rete
-                    isOffline == true -> {
+                    // Mostra la schermata di errore di rete: il sistema e' offline, oppure la partita e' ferma
+                    // perche' la domanda successiva non arriva per un problema di connessione
+                    isOffline == true || (isPlaying == true && isWaitingForConnection == true) -> {
                         NetworkErrorScreen(navController, gameViewModel)
                         wasOfflineBefore = true
                     }
@@ -1617,6 +1619,9 @@ fun GameOverScreen(
     navController: NavHostController,
 ) {
     val isRecord = gameViewModel.isRecord.observeAsState().value
+    //Punteggio della partita appena finita, osservato: lastGame veniva letto senza osservarlo e viene
+    //aggiornato solo dopo il salvataggio, quindi la schermata mostrava "Score: null"
+    val finalScore = gameViewModel.score.observeAsState().value ?: 0
     val isLandscape = isLandscape()
 
     @Composable
@@ -1731,7 +1736,7 @@ fun GameOverScreen(
             }
 
             Text(
-                text = "Score: ${gameViewModel.lastGame.value?.score}",
+                text = "Score: $finalScore",
                 fontSize = if (isLandscape) 30.sp else fontSizeUpperMedium,
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium

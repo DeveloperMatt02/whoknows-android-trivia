@@ -124,7 +124,7 @@ All asynchronous work uses **Kotlin coroutines**:
 - **Game timer:** a coroutine loop increments a counter every second with `delay(1000)` and pauses while `isGameTimerInterrupted` is `true`. It pauses while waiting for the API, while offline, and between questions.
 - **API rate limiter:** after every request a `Job` (`apiTimerJob`) runs `delay(5200)`. The next request `join()`s that job first, which guarantees the OpenTDB limit of one request every 5 seconds without blocking any thread.
 - **Answer feedback:** after an answer, `delay(500)` leaves time for the green or red highlight and the sound before the next question loads.
-- **Retry on failure:** if a question cannot be fetched, `nextQuestionWithRetry()` suspends with `delay()` until connectivity is back, then retries. It stops if the player quits. It never blocks the main thread.
+- **Retry on failure:** if a question cannot be fetched, `retryUntilSuccess()` (in `utils/`) retries it. While the system is offline it suspends with `delay()`, and it stops as soon as the player quits. It never blocks the main thread. If the failure is a connectivity error (`IOException`), the ViewModel exposes `isWaitingForConnection`, so the network-error screen also appears when the device looks connected but has no real Internet access (for example Wi-Fi without Internet).
 - **Atomic writes:** `GameQuestionDAO.insertGameWithQuestions` is a Room `@Transaction`, so a game and its question links are stored together.
 
 Cancellation is respected: repositories rethrow `CancellationException` instead of converting it into an error result.
@@ -162,6 +162,7 @@ Behaviour when the connection drops:
 |---|---|
 | Offline in the game menu | Network-error screen with a *Go back* button |
 | Connection lost mid-game | Network-error screen. The timer pauses and the player can wait or *Quit game*, which saves the game with its current score |
+| Connected but no real Internet access | The next question request fails with a connectivity error, and the same network-error screen is shown until a retry succeeds |
 | Connection restored mid-game | The pending question request is retried and the timer resumes |
 | Browsing history | Works fully offline, because it only reads Room |
 
@@ -190,7 +191,7 @@ Questions are persisted locally for the history, but new games still need the AP
 
 ## 10. Testing and CI
 
-- **Unit tests** (`app/src/test`, JUnit 4) cover the pure logic: `GameRules` (scoring, shuffling, API parameter mapping, timer formatting), the Room `Converters` (round trip, answers with commas, legacy format) and `CategoryManager`.
+- **Unit tests** (`app/src/test`, JUnit 4) cover the pure logic: `GameRules` (scoring, shuffling, API parameter mapping, timer formatting), the Room `Converters` (round trip, answers with commas, legacy format), `CategoryManager`, the default-network tracking (`DefaultNetworkTracker`, including network switches and the loss of a secondary network), the connectivity-error classification and the retry loop (`retryUntilSuccess`: waiting while offline, stopping when the game is quit).
 - **GitHub Actions:**
   - `android-ci.yml` runs the unit tests and builds the debug APK on every push and pull request, and uploads the APK and test reports.
   - `release.yml` builds and attaches the APK to a GitHub Release whenever a `v*` tag is pushed.

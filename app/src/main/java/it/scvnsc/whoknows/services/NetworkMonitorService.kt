@@ -10,10 +10,12 @@ import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import it.scvnsc.whoknows.utils.DefaultNetworkTracker
 
 class NetworkMonitorService : Service() {
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var networkCallback: ConnectivityManager.NetworkCallback
+    private val defaultNetworkTracker = DefaultNetworkTracker<Network>()
 
     companion object {
         private val _isOffline = MutableLiveData<Boolean>()
@@ -48,13 +50,15 @@ class NetworkMonitorService : Service() {
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                _isOffline.postValue(false)
+                defaultNetworkTracker.onAvailable(network)
+                _isOffline.postValue(defaultNetworkTracker.isOffline)
             }
 
             override fun onLost(network: Network) {
-                //La rete di default e' stata persa: ricontrollo, perche' il sistema potrebbe
-                //essere gia' passato a un'altra rete (es. dal Wi-Fi ai dati mobili)
-                _isOffline.postValue(!hasInternetConnection(this@NetworkMonitorService))
+                //Non interrogo activeNetwork: dentro onLost puo' ancora restituire la rete appena persa.
+                //Il tracker considera offline solo la perdita della rete di default corrente
+                defaultNetworkTracker.onLost(network)
+                _isOffline.postValue(defaultNetworkTracker.isOffline)
             }
         }
     }
@@ -65,6 +69,10 @@ class NetworkMonitorService : Service() {
         } catch (e: IllegalArgumentException) {
             // Il callback non era registrato, possiamo ignorare questa eccezione
         }
+
+        //Parto dalla rete attiva in questo momento; alla registrazione onAvailable viene comunque
+        //chiamato subito per la rete di default corrente
+        defaultNetworkTracker.reset(connectivityManager.activeNetwork)
 
         //Callback sulla sola rete di default: con registerNetworkCallback(request) arrivavano gli eventi
         //di tutte le reti con accesso a Internet, e la perdita di una rete secondaria (per esempio i dati
