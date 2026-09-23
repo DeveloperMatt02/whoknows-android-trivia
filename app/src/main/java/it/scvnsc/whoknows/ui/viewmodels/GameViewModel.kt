@@ -3,7 +3,6 @@ package it.scvnsc.whoknows.ui.viewmodels
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import android.database.sqlite.SQLiteException
 import android.media.MediaPlayer
 import android.media.SoundPool
 import android.util.Log
@@ -38,6 +37,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val SCORE_HARD_DIFFICULTY = 3
     private val WAIT_TIME = 500L
     private val STARTING_LIVES = 3
+    private val RETRY_DELAY = 1000L
 
     fun getCategories(): List<String> {
         val availableCategories = mutableListOf("Mixed")
@@ -243,15 +243,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun fetchNewQuestion() {
 
         //Fetcho la prossima domanda, se la richiesta API fallisce aspetto che torni la connessione e riproviamo
-        _questionForUser.value = nextQuestion()
-        if (_questionForUser.value == null) {
-            while (true) {
-                if (NetworkMonitorService.isOffline.value == false) {
-                    _questionForUser.value = nextQuestion()
-                    break
-                }
-            }
-        }
+        _questionForUser.value = nextQuestionWithRetry()
         //Resetto la risposta data dall'utente e riattivo il timer per continuare a giocare
         _userAnswer.value = ""
 
@@ -292,6 +284,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun startGame() {
+        //Se il setup dell'API era fallito (es. rete assente all'apertura) lo riprovo ora
+        ensureApiSetup()
+
         //Resetto il timer di gioco e il token per le domande
         _elapsedTime.postValue("")
         questionRepository.resetSessionToken()
@@ -305,17 +300,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         //Imposto le vite al valore di partenza
         _lives.postValue(STARTING_LIVES)
 
-        //Fetcho la nuova domanda
-        _questionForUser.value = nextQuestion()
-        //Se la richiesta API fallisce aspetto che torni la connessione e riproviamo
-        if (_questionForUser.value == null) {
-            while (true) {
-                if (NetworkMonitorService.isOffline.value == false) {
-                    _questionForUser.value = nextQuestion()
-                    break
-                }
-            }
-        }
+        //Fetcho la nuova domanda (se la richiesta API fallisce aspetto che torni la connessione e riproviamo)
+        _questionForUser.value = nextQuestionWithRetry()
+
+        //La partita e' stata abbandonata mentre si attendeva la connessione: non avvio timer e musica
+        if (_questionForUser.value == null) return
 
         Log.d("GameViewModel", "Game started")
         Log.d("GameViewModel", "Current question: ${_questionForUser.value}")
@@ -348,6 +337,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return ""
     }
 
+    //Riprova a ottenere una domanda finche' la partita e' in corso.
+    //L'attesa usa delay() e quindi sospende la coroutine senza bloccare il main thread
+    //(un while(true) attivo sul main thread impedirebbe anche l'aggiornamento di isOffline).
+    private suspend fun nextQuestionWithRetry(): Question? {
+        var question = nextQuestion()
+        while (question == null && _isGameOver.value != true) {
+            //Se siamo offline aspetto che torni la connessione
+            while (NetworkMonitorService.isOffline.value == true && _isGameOver.value != true) {
+                delay(RETRY_DELAY)
+            }
+            if (_isGameOver.value == true) break
+            question = nextQuestion()
+        }
+        return question
+    }
+
     //Funzione che ottiene la nuova domanda da presentare all'utente (l'API fornisce le domande in ordine casuale)
     private suspend fun nextQuestion(): Question? {
 
@@ -359,28 +364,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             Log.d("TimerJob", "API timer joinato")
         }
 
-        val newQuestion: Question
-        try {
-            when (val result = questionRepository.retrieveNewQuestion(
-                convertMixed(_selectedCategory.value.toString()),
-                convertMixed(_selectedDifficulty.value.toString()).lowercase()
-            )) {
-                is NetworkResult.Success -> {
-                    newQuestion = result.data
-                }
+        val result = questionRepository.retrieveNewQuestion(
+            convertMixed(_selectedCategory.value.toString()),
+            convertMixed(_selectedDifficulty.value.toString()).lowercase()
+        )
 
-                is NetworkResult.Error -> {
-                    Log.e("GameViewModel", "Error: ${result.exception.message}")
-                    return null
-                }
-            }
-        } catch (e: SQLiteException) {
-            Log.e("Database", "Error retrieving new question: ${e.message}")
-            return null
-        }
-
-        //avvio il timer per la prossima richiesta API
+        //avvio il timer per la prossima richiesta API dopo ogni tentativo, anche fallito,
+        //per rispettare il rate limit di OpenTDB (1 richiesta ogni 5 secondi)
         apiCountdownTimer()
+
+        val newQuestion: Question = when (result) {
+            is NetworkResult.Success -> result.data
+            is NetworkResult.Error -> {
+                Log.e("GameViewModel", "Error: ${result.exception.message}")
+                return null
+            }
+        }
 
         askedQuestions.add(newQuestion)
         _shuffledAnswers.value = shuffleAnswers(newQuestion)
@@ -508,13 +507,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun setupAPI() {
         viewModelScope.launch {
             //provo a fare il setup dell'api all'avvio del programma, se fallisce loggo un errore
-            try {
-                Log.d("GameViewModel", "API setup started")
-                questionRepository.setupInteractionWithAPI()
+            //(senza rilanciare l'eccezione, che farebbe crashare l'app) e riprovo all'avvio della partita
+            ensureApiSetup()
+        }
+    }
+
+    private suspend fun ensureApiSetup(): Boolean {
+        if (_isApiSetupComplete.value == true) return true
+        Log.d("GameViewModel", "API setup started")
+        return when (val result = questionRepository.setupInteractionWithAPI()) {
+            is NetworkResult.Success -> {
                 _isApiSetupComplete.value = true
-            } catch (e: Exception) {
-                Log.e("Error", "API error: ${e.message}")
-                throw e
+                true
+            }
+            is NetworkResult.Error -> {
+                Log.e("GameViewModel", "API setup error: ${result.exception.message}")
+                false
             }
         }
     }
