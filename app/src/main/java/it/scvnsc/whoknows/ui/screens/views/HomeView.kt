@@ -20,7 +20,10 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -54,6 +57,7 @@ import androidx.navigation.NavHostController
 import it.scvnsc.whoknows.R
 import it.scvnsc.whoknows.ui.screens.components.TopBar
 import it.scvnsc.whoknows.ui.theme.WhoKnowsTheme
+import it.scvnsc.whoknows.ui.screens.components.AutoResizeText
 import it.scvnsc.whoknows.ui.theme.buttonsTextStyle
 import it.scvnsc.whoknows.ui.theme.default_elevation
 import it.scvnsc.whoknows.ui.theme.home_buttons_height
@@ -231,7 +235,7 @@ fun HomeViewButtons(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.size(15.dp))
 
-                    Text(
+                    AutoResizeText(
                         text = "Play",
                         style = buttonsTextStyle,
                         textAlign = TextAlign.Center
@@ -266,7 +270,7 @@ fun HomeViewButtons(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.size(15.dp))
 
-                    Text(
+                    AutoResizeText(
                         text = "Your games",
                         style = buttonsTextStyle,
                         textAlign = TextAlign.Center
@@ -300,7 +304,7 @@ fun HomeViewButtons(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.size(15.dp))
 
-                    Text(
+                    AutoResizeText(
                         text = "Settings",
                         style = buttonsTextStyle,
                         textAlign = TextAlign.Center
@@ -311,12 +315,14 @@ fun HomeViewButtons(navController: NavHostController) {
 
 
     } else {
+        //I pulsanti si dividono lo spazio verticale disponibile (fino a un massimo di home_buttons_height),
+        //cosi' su schermi bassi o con testo/visualizzazione ingranditi non vengono tagliati
         Column(
-            verticalArrangement = Arrangement.spacedBy(40.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 40.dp)
+                .padding(top = 16.dp, bottom = 24.dp)
         ) {
             //Titolo applicazione
             AppTitle(context)
@@ -329,8 +335,11 @@ fun HomeViewButtons(navController: NavHostController) {
                 elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
                 shape = RoundedCornerShape(home_buttons_shape),
                 modifier = Modifier
-                    .height(home_buttons_height)
-                    .width(home_buttons_width)
+                    .weight(1f, fill = false)
+                    .heightIn(max = home_buttons_height)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.8f)
+                    .widthIn(max = home_buttons_width)
             ) {
                 Row(
                     modifier = Modifier
@@ -347,7 +356,7 @@ fun HomeViewButtons(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.size(15.dp))
 
-                    Text(
+                    AutoResizeText(
                         text = "Play",
                         style = buttonsTextStyle,
                         textAlign = TextAlign.Center
@@ -364,8 +373,11 @@ fun HomeViewButtons(navController: NavHostController) {
                 shape = RoundedCornerShape(home_buttons_shape),
                 elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
                 modifier = Modifier
-                    .height(home_buttons_height)
-                    .width(home_buttons_width)
+                    .weight(1f, fill = false)
+                    .heightIn(max = home_buttons_height)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.8f)
+                    .widthIn(max = home_buttons_width)
             ) {
                 Row(
                     modifier = Modifier
@@ -382,7 +394,7 @@ fun HomeViewButtons(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.size(15.dp))
 
-                    Text(
+                    AutoResizeText(
                         text = "Your games",
                         style = buttonsTextStyle,
                         textAlign = TextAlign.Center
@@ -398,8 +410,11 @@ fun HomeViewButtons(navController: NavHostController) {
                 shape = RoundedCornerShape(home_buttons_shape),
                 elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
                 modifier = Modifier
-                    .height(home_buttons_height)
-                    .width(home_buttons_width)
+                    .weight(1f, fill = false)
+                    .heightIn(max = home_buttons_height)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.8f)
+                    .widthIn(max = home_buttons_width)
             ) {
                 Row(
                     modifier = Modifier
@@ -416,7 +431,7 @@ fun HomeViewButtons(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.size(15.dp))
 
-                    Text(
+                    AutoResizeText(
                         text = "Settings",
                         style = buttonsTextStyle,
                         textAlign = TextAlign.Center

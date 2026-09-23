@@ -80,9 +80,10 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import it.scvnsc.whoknows.ui.screens.components.AutoResizeText
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material3.BasicAlertDialog
@@ -116,7 +117,6 @@ import it.scvnsc.whoknows.ui.theme.gameTimerTextStyle
 import it.scvnsc.whoknows.ui.theme.game_buttons_height
 import it.scvnsc.whoknows.ui.theme.game_buttons_padding_landscape
 import it.scvnsc.whoknows.ui.theme.game_buttons_shape
-import it.scvnsc.whoknows.ui.theme.game_buttons_spacing
 import it.scvnsc.whoknows.ui.theme.heart_icon_size
 import it.scvnsc.whoknows.ui.theme.heart_icon_size_landscape
 import it.scvnsc.whoknows.ui.theme.home_buttons_height
@@ -555,128 +555,108 @@ fun GameBox(gameViewModel: GameViewModel, navController: NavHostController) {
 
 @Composable
 fun GameBoxLandscape(gameViewModel: GameViewModel) {
+    //Layout fisso (senza scroll): statistiche in alto, domanda e risposte si dividono lo spazio rimanente
     Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxSize()
+            .padding(bottom = 8.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier
-                //.padding(start = bottom_bar_padding, end = bottom_bar_padding)
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
-            //Game timer box
-            Box(
-                modifier = Modifier
-                    .weight(0.25f)
-                    .align(Alignment.Top)
-                //.padding(start = 10.dp, end = 10.dp)
-            ) {
-                //Timer nella UI
-                GameTimer(gameViewModel)
-            }
-
-            //Game score box
-            Box(
-                modifier = Modifier
-                    .weight(0.25f)
-                    .align(Alignment.Top)
-            ) {
-                //Punteggio nella UI
-                GameScore(gameViewModel)
-            }
-
-            //Difficulty Box
-            Box(
-                modifier = Modifier
-                    .weight(0.25f)
-                    .align(Alignment.Top)
-            ) {
-                DifficultyBox(gameViewModel)
-            }
-
-            //Lives Box
-            Box(
-                modifier = Modifier
-                    .weight(0.25f)
-                    .align(Alignment.Top)
-            ) {
-                LivesBox(gameViewModel)
-            }
+            Box(modifier = Modifier.weight(0.25f).align(Alignment.Top)) { GameTimer(gameViewModel) }
+            Box(modifier = Modifier.weight(0.25f).align(Alignment.Top)) { GameScore(gameViewModel) }
+            Box(modifier = Modifier.weight(0.25f).align(Alignment.Top)) { DifficultyBox(gameViewModel) }
+            Box(modifier = Modifier.weight(0.25f).align(Alignment.Top)) { LivesBox(gameViewModel) }
         }
-        Spacer(modifier = Modifier.size(3.dp))
-        QuestionBox(gameViewModel)
+
+        QuestionBox(gameViewModel, modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
 fun GameBoxPortrait(gameViewModel: GameViewModel) {
+    //Layout fisso (senza scroll): statistiche in alto, domanda e risposte si dividono lo spazio rimanente
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = bottom_bar_padding, end = bottom_bar_padding)
+            .padding(start = bottom_bar_padding, end = bottom_bar_padding, bottom = bottom_bar_padding)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            //Game timer box
-            Box(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .align(Alignment.CenterVertically)
-            ) {
-                //Timer nella UI
-                GameTimer(gameViewModel)
-            }
-
-            //Game score box
-            Box(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .align(Alignment.CenterVertically)
-            ) {
-                //Punteggio nella UI
-                GameScore(gameViewModel)
-            }
+            Box(modifier = Modifier.weight(0.5f)) { GameTimer(gameViewModel) }
+            Box(modifier = Modifier.weight(0.5f)) { GameScore(gameViewModel) }
         }
-
-        Spacer(modifier = Modifier.size(5.dp))
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            //Difficulty Box
-            Box(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .align(Alignment.CenterVertically)
-            ) {
-                DifficultyBox(gameViewModel)
-            }
-
-            //Lives Box
-            Box(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .align(Alignment.CenterVertically)
-            ) {
-                LivesBox(gameViewModel)
-            }
+            Box(modifier = Modifier.weight(0.5f)) { DifficultyBox(gameViewModel) }
+            Box(modifier = Modifier.weight(0.5f)) { LivesBox(gameViewModel) }
         }
 
-        Spacer(modifier = Modifier.size(20.dp))
+        QuestionBox(gameViewModel, modifier = Modifier.weight(1f))
+    }
+}
 
-        QuestionBox(gameViewModel)
+//Padding interno ridotto per i riquadri delle statistiche (timer, punteggio, difficolta', vite):
+//con il padding di default di Button (24dp per lato) il testo andava a capo sugli schermi stretti
+private val statBoxContentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+
+//Contenuto comune di timer e punteggio: icona + etichetta + valore, ogni testo su una riga
+//con font che si riduce se lo spazio non basta
+@Composable
+fun StatBoxContent(
+    icon: ImageVector,
+    label: String,
+    isLandscape: Boolean,
+    value: @Composable () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            icon,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            contentDescription = null,
+            modifier = Modifier.size(if (isLandscape) 28.dp else 36.dp)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        if (isLandscape) {
+            AutoResizeText(
+                text = "$label: ",
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = gameTimerTextStyle,
+                fontSize = fontSizeNormal
+            )
+            value()
+        } else {
+            Column(horizontalAlignment = Alignment.Start) {
+                AutoResizeText(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = gameTimerTextStyle,
+                    fontSize = fontSizeNormal
+                )
+                value()
+            }
+        }
     }
 }
 
 @Composable
 fun GameTimer(gameViewModel: GameViewModel) {
-    val timer = gameViewModel.elapsedTime.observeAsState().value
+    val timer = gameViewModel.elapsedTime.observeAsState().value ?: ""
     val isLandscape = isLandscape()
     Button(
         onClick = { /* do nothing */ },
@@ -686,30 +666,14 @@ fun GameTimer(gameViewModel: GameViewModel) {
         enabled = false,
         elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, disabled_elevation),
         shape = CircleShape,
+        contentPadding = statBoxContentPadding,
         content = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(all = if (isLandscape) 0.dp else small_padding)
-            ) {
-                Icon(
-                    Icons.Default.Timer,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(size = if (isLandscape) 38.dp else 50.dp)
-                        .fillMaxSize()
-                        .padding(end = 10.dp)
-                )
-
-                Text(
-                    text = if (isLandscape) "Time: $timer" else "Time:\n$timer",
+            StatBoxContent(icon = Icons.Default.Timer, label = "Time", isLandscape = isLandscape) {
+                AutoResizeText(
+                    text = timer,
                     color = MaterialTheme.colorScheme.onPrimary,
                     style = gameTimerTextStyle,
-                    fontSize = if (isLandscape) fontSizeNormal else fontSizeUpperNormal,
-                    textAlign = TextAlign.Left,
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    fontSize = if (isLandscape) fontSizeNormal else fontSizeUpperNormal
                 )
             }
         },
@@ -735,50 +699,10 @@ fun GameScore(gameViewModel: GameViewModel) {
         enabled = false,
         shape = CircleShape,
         elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, disabled_elevation),
+        contentPadding = statBoxContentPadding,
         content = {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(all = if (isLandscape) 0.dp else small_padding)
-                    .padding(end = if (isLandscape) 10.dp else 0.dp)
-                    .fillMaxWidth()
-            ) {
-                Icon(
-                    Icons.Default.SportsScore,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(size = if (isLandscape) 41.dp else 48.dp)
-                        .padding(end = if (isLandscape) 3.dp else 10.dp)
-                        .fillMaxSize()
-                )
-
-                if (isLandscape) {
-                    Text(
-                        text = "Score: ",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = gameScoreTextStyle,
-                        fontSize = fontSizeNormal,
-                        textAlign = TextAlign.Left,
-                        modifier = Modifier.padding(start = 6.dp)
-                    )
-                    AnimatedScoreCount(currentScore)
-                } else {
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Score:",
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            style = gameScoreTextStyle,
-                            fontSize = fontSizeUpperNormal,
-                            textAlign = TextAlign.Right,
-                        )
-                        AnimatedScoreCount(currentScore)
-                    }
-                }
+            StatBoxContent(icon = Icons.Default.SportsScore, label = "Score", isLandscape = isLandscape) {
+                AnimatedScoreCount(currentScore)
             }
         },
         colors = ButtonColors(
@@ -808,13 +732,11 @@ fun AnimatedScoreCount(currentScore: Int?) {
         },
         label = "animated score"
     ) { score ->
-        Text(
+        AutoResizeText(
             text = "$score",
             color = MaterialTheme.colorScheme.onPrimary,
             style = gameScoreTextStyle,
-            fontSize = if (isLandscape) fontSizeNormal else fontSizeUpperNormal,
-            textAlign = if (isLandscape) TextAlign.Left else TextAlign.Right,
-            modifier = Modifier.padding(top = if (isLandscape) 0.dp else 0.dp)
+            fontSize = if (isLandscape) fontSizeNormal else fontSizeUpperNormal
         )
     }
 }
@@ -831,6 +753,7 @@ fun DifficultyBox(gameViewModel: GameViewModel) {
             .fillMaxWidth(),
         elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, disabled_elevation),
         enabled = false,
+        contentPadding = statBoxContentPadding,
         colors = ButtonColors(
             MaterialTheme.colorScheme.primary,
             MaterialTheme.colorScheme.primary,
@@ -855,12 +778,12 @@ fun DifficultyBoxPortrait(gameViewModel: GameViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Text(
+        AutoResizeText(
             textAlign = TextAlign.Center,
             text = "Difficulty:",
             fontSize = fontSizeUpperNormal,
             style = gameButtonsTextStyle,
-            color = Color.White,
+            color = Color.White
         )
         PrintDifficultyStars(gameViewModel)
     }
@@ -927,7 +850,7 @@ fun DifficultyBoxLandscape(gameViewModel: GameViewModel) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        AutoResizeText(
             textAlign = TextAlign.Center,
             text = "Difficulty:",
             fontSize = fontSizeNormal,
@@ -950,6 +873,7 @@ fun LivesBox(gameViewModel: GameViewModel) {
             .fillMaxWidth(),
         elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, disabled_elevation),
         enabled = false,
+        contentPadding = statBoxContentPadding,
         colors = ButtonColors(
             MaterialTheme.colorScheme.primary,
             MaterialTheme.colorScheme.primary,
@@ -975,7 +899,7 @@ fun LivesBoxLandscape(gameViewModel: GameViewModel) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        AutoResizeText(
             textAlign = TextAlign.Center,
             text = "Lives:",
             fontSize = fontSizeNormal,
@@ -1059,7 +983,7 @@ fun LivesBoxPortrait(gameViewModel: GameViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Text(
+        AutoResizeText(
             textAlign = TextAlign.Center,
             text = "Lives:",
             fontSize = fontSizeUpperNormal,
@@ -1072,39 +996,35 @@ fun LivesBoxPortrait(gameViewModel: GameViewModel) {
 
 
 @Composable
-fun QuestionBox(gameViewModel: GameViewModel) {
+fun QuestionBox(gameViewModel: GameViewModel, modifier: Modifier = Modifier) {
     val isLandscape = isLandscape()
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp),
+        modifier = modifier.fillMaxWidth()
     ) {
+        //La domanda occupa la parte alta dello spazio rimasto: il font si riduce se il testo non ci sta
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
+                .weight(if (isLandscape) 0.6f else 1f)
                 .fillMaxWidth()
+                .padding(horizontal = 8.dp)
         ) {
-            //Domanda nella UI
             ShowQuestion(gameViewModel)
         }
 
-        Spacer(
-            modifier = Modifier
-                .size(size = if (isLandscape) 10.dp else 0.dp)
-                .fillMaxWidth()
-        )
-
+        //Le risposte (4, oppure 2 per le domande vero/falso) occupano la parte bassa
         Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
-                .fillMaxSize()
+                .weight(if (isLandscape) 1f else 1.6f)
+                .fillMaxWidth()
         ) {
-            //Possibili risposte nella UI
             if (isLandscape) {
                 ShowAnswersLandscape(gameViewModel)
             } else {
                 ShowAnswersPortrait(gameViewModel)
             }
-
-
         }
     }
 }
@@ -1113,26 +1033,37 @@ fun QuestionBox(gameViewModel: GameViewModel) {
 fun ShowAnswersLandscape(gvm: GameViewModel) {
     val question = gvm.questionForUser.observeAsState().value
     val answers = gvm.shuffledAnswers.observeAsState().value
+
     val givenAnswer = gvm.userAnswer.observeAsState().value
 
-    Column{
-        LazyVerticalGrid(
-            userScrollEnabled = false,
-            modifier = Modifier
-                .fillMaxSize(),
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(all = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-
+    //Griglia 2 colonne: 2 righe per le domande a scelta multipla, 1 riga per vero/falso.
+    //Le righe si dividono l'altezza disponibile fino a un massimo, senza scroll
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp)
+    ) {
+        (answers ?: emptyList()).chunked(2).forEach { rowAnswers ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .heightIn(max = 58.dp)
+                    .fillMaxHeight()
+                    .fillMaxWidth()
             ) {
-            items(answers ?: emptyList()) { answer ->
-                AnswerButton(
-                    answerText = answer,
-                    isCorrect = question?.correct_answer == answer,
-                    isSelected = givenAnswer == answer,
-                    gvm = gvm
-                )
+                rowAnswers.forEach { answer ->
+                    AnswerButton(
+                        answerText = answer,
+                        isCorrect = question?.correct_answer == answer,
+                        isSelected = givenAnswer == answer,
+                        gvm = gvm,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    )
+                }
             }
         }
     }
@@ -1140,21 +1071,14 @@ fun ShowAnswersLandscape(gvm: GameViewModel) {
 
 @Composable
 fun ShowQuestion(gameViewModel: GameViewModel) {
-    Log.d("Debug", "++++++ Question ++++++\n")
-    gameViewModel.questionForUser.observeAsState().value?.let { Log.d("Debug", it.question) }
-    Log.d("Debug", "\n++++++ Question ++++++")
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
-    }
-    Text(
-        //text = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        text = gameViewModel.questionForUser.observeAsState().value?.question ?: "",
+    val question = gameViewModel.questionForUser.observeAsState().value?.question ?: ""
+    AutoResizeText(
+        text = question,
         style = gameQuestionTextStyle,
-        textAlign = TextAlign.Center,
+        fontSize = if (isLandscape()) fontSizeNormal else fontSizeUpperNormal,
+        minFontSize = 11.sp,
+        maxLines = 8,
+        textAlign = TextAlign.Center
     )
 }
 
@@ -1164,27 +1088,25 @@ fun ShowAnswersPortrait(gvm: GameViewModel) {
     val answers = gvm.shuffledAnswers.observeAsState().value
     val givenAnswer = gvm.userAnswer.observeAsState().value
 
+    //I pulsanti (4, oppure 2 per vero/falso) si dividono l'altezza disponibile fino a game_buttons_height,
+    //cosi' entrano sempre nello schermo senza scroll
     Column(
-        verticalArrangement = Arrangement.spacedBy(game_buttons_spacing),
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 40.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
-
-        Log.d("GameView", "++++++ Answers list ++++++\n")
-
-        for (ans in answers!!) {
+        for (ans in answers.orEmpty()) {
             AnswerButton(
                 answerText = ans,
                 isCorrect = question?.correct_answer.equals(ans),
                 isSelected = givenAnswer.equals(ans),
-                gvm = gvm
+                gvm = gvm,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .heightIn(max = game_buttons_height)
+                    .fillMaxHeight()
             )
         }
-
-        Log.d("GameView", "\n++++++ Answers list ++++++")
-
     }
 }
 
@@ -1193,25 +1115,21 @@ fun AnswerButton(
     answerText: String,
     isCorrect: Boolean,
     isSelected: Boolean,
-    gvm: GameViewModel
+    gvm: GameViewModel,
+    modifier: Modifier = Modifier
 ) {
     val backgroundColor = when {
         isSelected && isCorrect -> Color.Green
         isSelected && !isCorrect -> Color.Red
         else -> MaterialTheme.colorScheme.primary
     }
-    val isLandscape = isLandscape()
     val isAnswerSelected = gvm.isAnswerSelected.observeAsState().value
-
-    Log.d("GameView", "Answer: $answerText -> $isCorrect")
-
 
     Button(
         elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
         shape = RoundedCornerShape(game_buttons_shape),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height = if (isLandscape) 58.dp else game_buttons_height),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        modifier = modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = backgroundColor
         ),
@@ -1221,18 +1139,19 @@ fun AnswerButton(
             }
         }
     ) {
-        Text(
+        //Il font parte da una dimensione in base alla lunghezza e si riduce se non entra nel pulsante
+        AutoResizeText(
             text = answerText,
-            style = gameButtonsTextStyle.copy(
-                fontSize = when {
-                    answerText.length <= 20 -> 18.sp
-                    answerText.length <= 40 -> 16.sp
-                    answerText.length <= 60 -> 14.sp
-                    else -> 12.sp
-                }
-            ),
-            textAlign = TextAlign.Center,
-            maxLines = 2
+            style = gameButtonsTextStyle,
+            fontSize = when {
+                answerText.length <= 20 -> 18.sp
+                answerText.length <= 40 -> 16.sp
+                answerText.length <= 60 -> 14.sp
+                else -> 12.sp
+            },
+            minFontSize = 10.sp,
+            maxLines = 2,
+            textAlign = TextAlign.Center
         )
     }
 }
