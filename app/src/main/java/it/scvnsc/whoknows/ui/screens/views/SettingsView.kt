@@ -289,7 +289,7 @@ fun SettingsButtons(
         }
 
         Button(
-            onClick = { uriHandler.openUri("https://github.com/Trossi-Oberi/mp-2324-trivia") },
+            onClick = { uriHandler.openUri("https://github.com/DeveloperMatt02/whoknows-android-trivia") },
             elevation = ButtonDefaults.buttonElevation(default_elevation, pressed_elevation),
             shape = RoundedCornerShape(home_buttons_shape),
             modifier = buttonModifier
