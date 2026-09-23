@@ -63,7 +63,6 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation (libs.retrofit2)
     implementation (libs.retrofit2gson)
-    implementation(libs.androidx.graphics.shapes.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -72,16 +71,12 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    //Http request
-    implementation(libs.volley)
-
     //Gson (Json serializer/deserializer)
     implementation(libs.gson)
 
     //Room
     implementation(libs.androidx.room.ktx)//KTX Extensions/Coroutines for Room
     implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
 
     // To use Kotlin annotation processing tool (kapt)
     //noinspection KaptUsageInsteadOfKsp
@@ -92,13 +87,6 @@ dependencies {
 
     //NavigationController
     implementation(libs.androidx.navigation.compose)
-
-    //ImageLoader
-    implementation(libs.coil.compose)
-    implementation(libs.coil.svg)
-
-    //Splashscreen
-    implementation(libs.androidx.core.splashscreen)
 
     //For tracing app performances
     implementation(libs.androidx.runtime.tracing)
