@@ -103,6 +103,7 @@ The app requests **one question at a time** (`amount=1`), so the selected catego
 - **Typography:** *Chakra Petch* for the UI and *Nabla* (a colour font) for the animated title. In the title, each letter bounces with a staggered infinite transition.
 - **Responsive layouts:** `isLandscape()` switches between portrait and landscape variants of the home buttons, the game board (question, answers, lives, difficulty stars, score) and the stats rows.
 - **Feedback:** the selected answer turns green (correct) or red (wrong). Sound effects play, hearts animate when a life is lost, and the score counter animates.
+- **Brand assets:** the isometric "¿?" logo, the puzzle pattern used as the app background (`puzzle_bg_black` / `puzzle_bg_white`) and the promotional banner are collected in `docs/images/`; app screenshots are in `docs/screenshots/`.
 - **Theme and sound:** toggled from the top bar or the settings screen, persisted in SharedPreferences and applied app-wide instantly.
 
 ## 7. Known Technical Debt

@@ -1,5 +1,10 @@
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="¿WhoKnows? – The arcade-style trivia game for Android" width="100%">
+</p>
+
 # ¿WhoKnows?: Android Trivia Game
 
+[![Download APK](https://img.shields.io/github/v/release/DeveloperMatt02/whoknows-android-trivia?label=Download%20APK&logo=android&color=FFC107)](https://github.com/DeveloperMatt02/whoknows-android-trivia/releases/latest)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF.svg?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4.svg?logo=jetpackcompose&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-9.0%2B%20(API%2028)-3DDC84.svg?logo=android&logoColor=white)
@@ -90,19 +95,12 @@ graph TD
 *   [Technical Design Document](docs/TECHNICAL_DESIGN.md): game rules, API integration, database schema
 *   [Requirements](docs/REQUIREMENTS.md): user stories and functional and non-functional requirements
 
-<!--
-## 🎥 Screenshots & Demo
+## 📱 Screenshots
 
-Add your captures to docs/screenshots/ (see docs/screenshots/README.md), then remove this comment.
-
-| Home | Game | Game over |
+| Home | In game | Game details |
 |:---:|:---:|:---:|
-| <img src="docs/screenshots/home.png" width="220"/> | <img src="docs/screenshots/game.png" width="220"/> | <img src="docs/screenshots/game-over.png" width="220"/> |
-
-| History | Game details | Landscape |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/history.png" width="220"/> | <img src="docs/screenshots/game-details.png" width="220"/> | <img src="docs/screenshots/game-landscape.png" width="330"/> |
--->
+| <img src="docs/screenshots/home.png" alt="Home screen with Play, Your games and Settings" width="240"> | <img src="docs/screenshots/in-game.png" alt="A hard question in progress with timer, score, difficulty and lives" width="240"> | <img src="docs/screenshots/game-details.png" alt="Details of a past game with every question marked right or wrong" width="240"> |
+| Animated title and theme toggle | Timer, score, difficulty and lives | Past games, question by question |
 
 ## 🚦 Getting Started
 
@@ -157,13 +155,16 @@ whoknows-android-trivia/
 │       │   │   ├── services/                # NetworkMonitorService (connectivity)
 │       │   │   ├── ui/
 │       │   │   │   ├── screens/views/       # Home, Game, Stats, Settings screens
-│       │   │   │   ├── screens/components/  # Shared TopBar
+│       │   │   │   ├── screens/components/  # Shared TopBar, AutoResizeText
 │       │   │   │   ├── theme/               # Colours, typography, dimensions
 │       │   │   │   └── viewmodels/          # Game, Stats, Settings ViewModels
 │       │   │   └── utils/                   # GameRules, converters, deserializer, helpers
 │       │   └── res/                         # Fonts, sounds, drawables
 │       └── test/                            # JVM unit tests
-├── docs/                                    # Architecture, design and requirements
+├── docs/
+│   ├── ARCHITECTURE.md, TECHNICAL_DESIGN.md, REQUIREMENTS.md
+│   ├── images/                              # Banner, logo, social preview, puzzle pattern
+│   └── screenshots/                         # App screenshots used in this README
 ├── .github/workflows/                       # CI and release pipelines
 └── gradle/libs.versions.toml                # Dependency version catalog
 ```
@@ -192,8 +193,9 @@ Developed by:
 ## 🙏 Credits
 
 *   Trivia questions: [Open Trivia Database](https://opentdb.com/), licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+*   Logo, puzzle pattern and promotional artwork: created by the ¿WhoKnows? team (see [`docs/images`](docs/images))
 *   Fonts: [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch) and [Nabla](https://fonts.google.com/specimen/Nabla), licensed under the [SIL Open Font License 1.1](https://openfontlicense.org/)
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details..
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
